@@ -34,6 +34,8 @@ class Model(Module):
 model = Model()
 model.load('/opt/ml/model/net.pkl')
 
+batch_size = 1
+
 print('init done.')
 
 def get_data(n): # generate random data for training test.
@@ -91,8 +93,8 @@ def invocations():
 #         print('Download finished!')
 
     for x, y in get_data(1):
-        inference_result = model(x)
-    
+        inference_result = model(x).numpy().tolist()
+        
     _payload = json.dumps(inference_result,ensure_ascii=False)
 
     return flask.Response(response=_payload, status=200, mimetype='application/json')
