@@ -9,6 +9,8 @@ import io
 
 import time
 import jittor as jt
+from jittor import Module
+from jittor import nn
 import numpy as np
 
 
@@ -17,7 +19,20 @@ app = flask.Flask(__name__)
 
 s3_client = boto3.client('s3')
 
-model = jt.load('/opt/ml/model/net.pkl')
+
+class Model(Module):
+    def __init__(self):
+        self.layer1 = nn.Linear(1, 10)
+        self.relu = nn.Relu() 
+        self.layer2 = nn.Linear(10, 1)
+    def execute (self,x) :
+        x = self.layer1(x)
+        x = self.relu(x)
+        x = self.layer2(x)
+        return x
+    
+model = Model()
+model.load('/opt/ml/model/net.pkl')
 
 print('init done.')
 
@@ -26,7 +41,7 @@ def get_data(n): # generate random data for training test.
         x = np.random.rand(batch_size, 1)
         y = x*x
         yield jt.float32(x), jt.float32(y)
-
+        
 
 @app.route('/ping', methods=['GET'])
 def ping():
@@ -75,9 +90,8 @@ def invocations():
 
 #         print('Download finished!')
 
-    x, y = get_data(1)
-
-    inference_result = model(x)
+    for x, y in get_data(1):
+        inference_result = model(x)
     
     _payload = json.dumps(inference_result,ensure_ascii=False)
 
