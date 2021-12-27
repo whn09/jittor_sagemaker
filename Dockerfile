@@ -1,4 +1,5 @@
-ARG FROM_IMAGE=ubuntu:18.04
+# ARG FROM_IMAGE=ubuntu:18.04
+ARG FROM_IMAGE=nvidia/cuda:10.2-cudnn8-devel-ubuntu18.04
 
 FROM ${FROM_IMAGE}
 
@@ -37,6 +38,8 @@ RUN pip3 install matplotlib
 RUN apt install openmpi-bin openmpi-common libopenmpi-dev -y
 
 RUN pip3 install jittor --timeout 100 && python3.7 -m jittor.test.test_example
+
+# RUN apt install git -y
 
 # RUN git clone https://github.com/Jittor/jittor.git /opt/ml/code/jittor
 

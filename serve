@@ -7,7 +7,7 @@ import signal
 import subprocess
 import sys
 
-cpu_count = 1  # multiprocessing.cpu_count()-1
+cpu_count = multiprocessing.cpu_count()-1
 # model_server_timeout = os.environ.get('MODEL_SERVER_TIMEOUT', 3600*3)
 # model_server_workers = int(os.environ.get('MODEL_SERVER_WORKERS', cpu_count))
 model_server_timeout = 3600*3
@@ -39,6 +39,7 @@ def start_server():
                                  '-k', 'gevent',
                                  '-b', 'unix:/tmp/gunicorn.sock',
                                  '-w', str(model_server_workers),
+                                 '--preload',
                                  'wsgi:app'])
 
     signal.signal(signal.SIGTERM, lambda a, b: sigterm_handler(nginx.pid, gunicorn.pid))
