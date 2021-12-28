@@ -68,12 +68,47 @@ RUN ln -sf /dev/stderr /var/log/nginx/error.log
 
 RUN pip3 install flask gevent gunicorn boto3
 
+RUN pip3 install nvgpu
+
+# RUN apt-get update && apt-get install -y --no-install-recommends --allow-unauthenticated --allow-downgrades  --allow-change-held-packages \
+#    ca-certificates \
+#    openssl \
+#    build-essential \
+#    openssh-client \
+#    openssh-server \
+#    && mkdir -p /var/run/sshd
+   
+# # SSH login fix. Otherwise user is kicked off after login
+# RUN mkdir -p /var/run/sshd \
+#    && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+# # Create SSH key.
+# RUN mkdir -p /root/.ssh/ \
+#    && ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa \
+#    && cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys \
+#    && printf "Host *\n  StrictHostKeyChecking no\n" >> /root/.ssh/config
+
+# # Allow OpenSSH to talk to containers without asking for confirmation
+# RUN cat /etc/ssh/ssh_config | grep -v StrictHostKeyChecking > /etc/ssh/ssh_config.new \
+#    && echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config.new \
+#    && mv /etc/ssh/ssh_config.new /etc/ssh/ssh_config
+
+# # Install nccl
+# RUN apt install git -y
+# RUN cd /tmp \
+#   && git clone https://github.com/NVIDIA/nccl.git -b v2.8.4-1 \
+#   && cd nccl \
+#   && make -j64 src.build BUILDDIR=/usr/local \
+#   && rm -rf /tmp/nccl
+
 ENV PATH="/opt/ml/code:${PATH}"
 
 # /opt/ml and all subdirectories are utilized by SageMaker, we use the /code subdirectory to store our user code.
 RUN mkdir -p /opt/ml/code
-COPY init_jittor.py /opt/ml/code
-RUN python3.7 /opt/ml/code/init_jittor.py
+
+# no use now, since find_cache_path design
+# COPY init_jittor.py /opt/ml/code
+# RUN python3.7 /opt/ml/code/init_jittor.py
 
 COPY train /opt/ml/code
 COPY train.py /opt/ml/code

@@ -31,6 +31,7 @@ input_path = os.path.join(prefix,'input/data')
 output_path = os.path.join(prefix, 'output')
 model_path = os.path.join(prefix, 'model')
 param_path = os.path.join(prefix, 'input/config/hyperparameters.json')
+resource_path = os.path.join(prefix, 'input/config/resourceconfig.json')
 
 # This algorithm has a single channel of input data called 'training'. Since we run in
 # File mode, the input files are copied to the directory specified here.
@@ -76,14 +77,41 @@ if __name__ == '__main__':
         # https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container
         with open(param_path, 'r') as tc:
             training_params = json.load(tc)
-
+            
         python_executable = sys.executable
         cmd_args = _hyperparameters_to_cmd_args(training_params)
-
+        
+        with open(resource_path, 'r') as tc:
+            resource_params = json.load(tc)
+        print('resource_params:', resource_params)
+        
+        hosts = resource_params['hosts']
+            
+        print('os.environ:', os.environ)
+        # num_gpus = os.environ['SM_NUM_GPUS']
+        import nvgpu
+        try:
+            num_gpus = len(nvgpu.available_gpus())
+        except:
+            num_gpus = 0
+        print('num_gpus:', num_gpus)
+        
+        #if len(hosts) > 1 and num_gpus <= 1:
+        #    hosts = [host+':1' for host in hosts]
+        #    python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts))+' -host '+','.join(hosts)+' '+python_executable
+        #elif len(hosts) == 1 and num_gpus > 1:
+        #    python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(num_gpus)+' '+python_executable
+        #elif len(hosts) > 1 and num_gpus > 1:
+        #    hosts = [host+':'+str(num_gpus) for host in hosts]
+        #    python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts)*num_gpus)+' -host '+','.join(hosts)+' '+python_executable
+        
         train_cmd = [python_executable, training_script] + default_params + cmd_args
         print('train_cmd:', train_cmd)
 
-        _run(train_cmd)
+        if len(hosts) > 1 or num_gpus > 1:
+            os.system(' '.join(train_cmd))
+        else:
+            _run(train_cmd)
         print('Training complete.')
 
         # A zero exit code causes the job to be marked a Succeeded.

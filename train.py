@@ -57,4 +57,5 @@ for epoch in range(epochs):
         optim.step(loss_mean)
         print(f"step {i}, loss = {loss_mean.data.sum()}")
 
-model.save(os.path.join(args.model_dir, 'net.pkl'))
+if jt.rank == 0:
+    model.save(os.path.join(args.model_dir, 'net.pkl'))
