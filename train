@@ -96,14 +96,16 @@ if __name__ == '__main__':
             num_gpus = 0
         print('num_gpus:', num_gpus)
         
-        #if len(hosts) > 1 and num_gpus <= 1:
-        #    hosts = [host+':1' for host in hosts]
-        #    python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts))+' -host '+','.join(hosts)+' '+python_executable
-        #elif len(hosts) == 1 and num_gpus > 1:
-        #    python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(num_gpus)+' '+python_executable
-        #elif len(hosts) > 1 and num_gpus > 1:
-        #    hosts = [host+':'+str(num_gpus) for host in hosts]
-        #    python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts)*num_gpus)+' -host '+','.join(hosts)+' '+python_executable
+        # hosts = ['-'.join(host.split('-')[:2]) for host in hosts]
+        
+        if len(hosts) > 1 and num_gpus <= 1:
+            hosts = [host+':1' for host in hosts]
+            python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts))+' -host '+','.join(hosts)+' '+python_executable
+        elif len(hosts) == 1 and num_gpus > 1:
+            python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(num_gpus)+' '+python_executable
+        elif len(hosts) > 1 and num_gpus > 1:
+            hosts = [host+':'+str(num_gpus) for host in hosts]
+            python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts)*num_gpus)+' -host '+','.join(hosts)+' '+python_executable
         
         train_cmd = [python_executable, training_script] + default_params + cmd_args
         print('train_cmd:', train_cmd)
