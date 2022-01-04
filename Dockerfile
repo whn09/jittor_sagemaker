@@ -70,36 +70,26 @@ RUN pip3 install flask gevent gunicorn boto3
 
 RUN pip3 install nvgpu
 
-# RUN apt-get update && apt-get install -y --no-install-recommends --allow-unauthenticated --allow-downgrades  --allow-change-held-packages \
-#    ca-certificates \
-#    openssl \
-#    build-essential \
-#    openssh-client \
-#    openssh-server \
-#    && mkdir -p /var/run/sshd
-   
-# # SSH login fix. Otherwise user is kicked off after login
-# RUN mkdir -p /var/run/sshd \
-#    && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+# Install OpenSSH for MPI to communicate between containers, allow OpenSSH to talk to containers without asking for confirmation
+RUN apt-get update \
+ && apt-get install -y --allow-downgrades --allow-change-held-packages --no-install-recommends \
+ && apt-get install -y --no-install-recommends openssh-client openssh-server \
+ && apt-get install -y jq \
+ && mkdir -p /var/run/sshd \
+ && cat /etc/ssh/ssh_config | grep -v StrictHostKeyChecking > /etc/ssh/ssh_config.new \
+ && echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config.new \
+ && mv /etc/ssh/ssh_config.new /etc/ssh/ssh_config \
+ && rm -rf /var/lib/apt/lists/*
 
-# # Create SSH key.
-# RUN mkdir -p /root/.ssh/ \
-#    && ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa \
-#    && cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys \
-#    && printf "Host *\n  StrictHostKeyChecking no\n" >> /root/.ssh/config
+# Configure OpenSSH so that nodes can communicate with each other
+RUN mkdir -p /var/run/sshd && \
+ sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
-# # Allow OpenSSH to talk to containers without asking for confirmation
-# RUN cat /etc/ssh/ssh_config | grep -v StrictHostKeyChecking > /etc/ssh/ssh_config.new \
-#    && echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config.new \
-#    && mv /etc/ssh/ssh_config.new /etc/ssh/ssh_config
-
-# # Install nccl
-# RUN apt install git -y
-# RUN cd /tmp \
-#   && git clone https://github.com/NVIDIA/nccl.git -b v2.8.4-1 \
-#   && cd nccl \
-#   && make -j64 src.build BUILDDIR=/usr/local \
-#   && rm -rf /tmp/nccl
+RUN rm -rf /root/.ssh/ && \
+ mkdir -p /root/.ssh/ && \
+ ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa && \
+ cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys \
+ && printf "Host *\n StrictHostKeyChecking no\n" >> /root/.ssh/config
 
 ENV PATH="/opt/ml/code:${PATH}"
 
@@ -117,4 +107,12 @@ COPY wsgi.py /opt/ml/code
 COPY predictor.py /opt/ml/code
 COPY nginx.conf /opt/ml/code
 
+# Copy workaround script for incorrect hostname
+COPY changehostname.c /opt/ml/code
+COPY start_with_right_hostname.sh /usr/local/bin/start_with_right_hostname.sh
+
 WORKDIR /opt/ml/code
+
+# Starts framework
+ENTRYPOINT ["bash", "-m", "start_with_right_hostname.sh"]
+CMD ["/bin/bash"]

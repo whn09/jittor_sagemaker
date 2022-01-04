@@ -39,7 +39,7 @@ channel_name = 'training'
 training_path = os.path.join(input_path, channel_name)
 
 # default params
-training_script = 'train.py'
+training_script = '/opt/ml/code/train.py'
 default_params = ['--model-dir', str(model_path)]
 
 
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         
         hosts = resource_params['hosts']
             
-        print('os.environ:', os.environ)
+        # print('os.environ:', os.environ)
         # num_gpus = os.environ['SM_NUM_GPUS']
         import nvgpu
         try:
@@ -100,12 +100,12 @@ if __name__ == '__main__':
         
         if len(hosts) > 1 and num_gpus <= 1:
             hosts = [host+':1' for host in hosts]
-            python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts))+' -host '+','.join(hosts)+' '+python_executable
+            python_executable = 'mpirun --allow-run-as-root -np '+str(len(hosts))+' -host '+','.join(hosts)+' '+python_executable
         elif len(hosts) == 1 and num_gpus > 1:
-            python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(num_gpus)+' '+python_executable
+            python_executable = 'mpirun --allow-run-as-root -np '+str(num_gpus)+' '+python_executable
         elif len(hosts) > 1 and num_gpus > 1:
             hosts = [host+':'+str(num_gpus) for host in hosts]
-            python_executable = '/usr/bin/mpirun --allow-run-as-root -np '+str(len(hosts)*num_gpus)+' -host '+','.join(hosts)+' '+python_executable
+            python_executable = 'mpirun --allow-run-as-root -np '+str(len(hosts)*num_gpus)+' -host '+','.join(hosts)+' '+python_executable
         
         train_cmd = [python_executable, training_script] + default_params + cmd_args
         print('train_cmd:', train_cmd)
