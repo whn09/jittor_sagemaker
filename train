@@ -25,6 +25,8 @@ import sys
 import subprocess
 import traceback
 
+os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
+
 # These are the paths to where SageMaker mounts interesting things in your container.
 prefix = '/opt/ml/'
 input_path = os.path.join(prefix,'input/data')
@@ -109,6 +111,10 @@ if __name__ == '__main__':
         
         train_cmd = [python_executable, training_script] + default_params + cmd_args
         print('train_cmd:', train_cmd)
+        
+        with open('/etc/hosts', 'r') as fin:
+            lines = fin.readlines()
+            print('/etc/hosts:', lines)
 
         if len(hosts) > 1 or num_gpus > 1:
             os.system(' '.join(train_cmd))
